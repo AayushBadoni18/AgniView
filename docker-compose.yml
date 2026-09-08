@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-agniview}
+      POSTGRES_USER: ${POSTGRES_USER:-agniview}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agniview}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://agniview:agniview@postgres:5432/agniview}
+      DEMO_MODE: ${DEMO_MODE:-false}
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN:-}
+        BACKEND_URL: http://backend:5000
+    environment:
+      BACKEND_URL: http://backend:5000
+      NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  worker:
+    profiles: ["ingestion"]
+    build: ./backend
+    command: ["python", "worker.py"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://agniview:agniview@postgres:5432/agniview}
+      NASA_FIRMS_API_KEY: ${NASA_FIRMS_API_KEY:-}
+      FIRMS_AREA: ${FIRMS_AREA:-54,5.5,102,40}
+      FIRMS_SOURCE: ${FIRMS_SOURCE:-VIIRS_NOAA20_NRT}
+      SATELLITE_ENRICHMENT_ENABLED: ${SATELLITE_ENRICHMENT_ENABLED:-false}
+      NASA_EARTHDATA_USERNAME: ${NASA_EARTHDATA_USERNAME:-}
+      NASA_EARTHDATA_PASSWORD: ${NASA_EARTHDATA_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  osm-worker:
+    profiles: ["ingestion"]
+    build: ./backend
+    command: ["python", "osm_worker.py"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://agniview:agniview@postgres:5432/agniview}
+      OSM_BBOX: ${OSM_BBOX:-5.5,54,40,102}
+      OSM_REFRESH_INTERVAL_SECONDS: ${OSM_REFRESH_INTERVAL_SECONDS:-604800}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  minio_data:

@@ -1,0 +1,30 @@
+:root { color-scheme: dark; --bg: #101513; --surface: #18201d; --line: #34403b; --text: #f4f1e8; --muted: #a5afa9; --amber: #e8b44f; --fire: #e65335; --teal: #78a6a3; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 Arial, sans-serif; }
+button, input, select { font: inherit; }
+button, a, select, input { border-radius: 4px; }
+.app-shell { min-height: 100vh; padding: 20px; }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+h1, h2, h3, p { margin-top: 0; } h1 { margin-bottom: 0; font-size: 30px; letter-spacing: -.04em; }
+.savings { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.eyebrow { margin-bottom: 2px; color: var(--amber); font: 700 11px/1.2 monospace; letter-spacing: .14em; }
+.export, button { border: 1px solid var(--line); background: var(--surface); color: var(--text); padding: 9px 12px; text-decoration: none; cursor: pointer; }
+header nav { display: flex; gap: 8px; }
+.filters { display: flex; align-items: end; gap: 12px; margin-bottom: 12px; }
+.filters label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
+select, input { border: 1px solid var(--line); background: #111714; color: var(--text); padding: 8px; }
+.filters span { margin-left: auto; color: var(--muted); }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 390px; height: calc(100vh - 128px); border: 1px solid var(--line); }
+.map, .map-fallback { min-height: 460px; }
+.map-fallback { display: grid; align-content: start; gap: 8px; padding: 24px; background: radial-gradient(circle at 30% 40%, #26342e, #111714 65%); }
+.map-fallback button { text-align: left; }.dot { display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: var(--teal); }.dot.wildfire { background: var(--fire); }.dot.industrial { background: var(--amber); }
+.detail { position: relative; overflow-y: auto; padding: 22px; border-left: 1px solid var(--line); background: var(--surface); }
+.detail.empty { display: grid; place-items: center; color: var(--muted); text-align: center; }
+.close { position: absolute; right: 14px; top: 12px; border: 0; background: transparent; font-size: 24px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; }.title-row h2 { margin-bottom: 4px; }.title-row strong { color: var(--amber); font-size: 20px; }
+.badge { display: inline-block; padding: 3px 8px; border: 1px solid var(--line); color: var(--muted); }.badge.high { color: #ff8a70; }.badge.medium { color: var(--amber); }
+dl { border-block: 1px solid var(--line); } dl div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #27312d; } dt { color: var(--muted); } dd { margin: 0; text-align: right; }
+.detail section { padding-top: 16px; }.detail h3 { font-size: 14px; }.ai { border-top: 1px solid var(--line); }.ai form label { display: block; margin-bottom: 6px; color: var(--muted); }.ai form div { display: flex; gap: 6px; }.ai input { min-width: 0; flex: 1; }.answer { margin: 10px 0; padding: 10px; border-left: 2px solid var(--amber); background: #111714; }.answer p { margin: 4px 0 0; }
+.timeline { margin: 0; padding: 0; list-style: none; }.timeline li { display: grid; gap: 2px; padding: 7px 0; border-bottom: 1px solid #27312d; }.timeline time { color: var(--muted); font-size: 12px; }
+.satellite-thumbnail { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; }
+@media (max-width: 760px) { .app-shell { padding: 12px; overflow: hidden; } header { align-items: flex-start; flex-wrap: wrap; gap: 12px; } header nav { width: 100%; }.workspace { display: block; height: auto; min-width: 0; }.detail { border-left: 0; border-top: 1px solid var(--line); }.filters { flex-wrap: wrap; }.filters label { flex: 1 1 140px; min-width: 0; }.filters input, .filters select { width: 100%; min-width: 0; }.filters span { width: 100%; margin-left: 0; }.map-fallback { min-width: 0; padding: 16px; }.map-fallback button { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }

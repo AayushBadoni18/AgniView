@@ -1,0 +1,24 @@
+# AgniView Milestones
+
+- [x] Phase 0 — Repository foundation
+  - [x] 0.1 Repository structure
+  - [x] 0.2 Environment configuration
+  - [x] 0.3 Local infrastructure validation
+- [x] Phase 1 — Database foundation
+- [-] Phase 2 — NASA FIRMS ingestion (implemented; credential verification blocked)
+- [x] Phase 3 — OSM industrial context
+- [x] Phase 4 — Core classification engine
+- [x] Phase 5 — Persistent classification memory logic
+- [-] Phase 6 — Satellite enrichment (live STAC and COG logic verified; authenticated asset read blocked)
+- [x] Phase 7 — Backend REST API
+- [-] Phase 8 — Map frontend (interactive fallback verified; token-backed Mapbox blocked)
+- [x] Phase 9 — Event detail experience
+- [x] Phase 10 — Point-specific Ask AI
+- [x] Phase 11 — Alerting
+- [x] Phase 12 — CSV/PDF exports
+- [x] Phase 13 — Performance optimization
+- [x] Phase 14 — Observability and failure handling
+- [x] Phase 15 — Local test hardening
+- [x] Phase 16 — Local container deployment
+- [x] Phase 17 — Demo hardening
+- [-] Phase 18 — Final quality gate (FIRMS, Earthdata, and Mapbox credentials blocked)
