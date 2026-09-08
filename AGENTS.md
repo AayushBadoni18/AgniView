@@ -248,6 +248,38 @@ The first supplied attachment is a knowledge-transfer document template and comp
 - Never fabricate missing evidence.
 - Prefer the smallest implementation that satisfies the mandatory requirements.
 
+## Curated visual asset library
+
+These are approved optional references for future frontend work, not baseline AgniView dependencies:
+
+- `react-three-fiber` (`@react-three/fiber`): keep for a real 3D visualization or interactive shader scene. It pairs with React 19 through R3F 9. Do not add it for ordinary map, panel, chart, or CSS animation work.
+- `shadergradient` (`@shadergradient/react`): keep for an optional ambient/hero shader background. It requires the R3F/Three stack and should be lazy-loaded so the operational map UI does not pay its cost.
+- `liquid-glass.js`: keep as a zero-dependency visual reference for a restrained glass panel treatment. Prefer the smallest maintained, browser-compatible source and a CSS fallback; do not make event details or controls depend on WebGL.
+- `liquid-logo`: keep as a design-time branding asset/reference only. Export a static AgniView logo asset; do not embed the logo generator or its animation runtime in the production dashboard.
+
+Installation policy:
+
+- Baseline: install none of the above.
+- If a 3D/shader surface is explicitly approved, from `frontend/` run `npm install three @react-three/fiber @shadergradient/react three-stdlib camera-controls`, then lazy-load the client-only component and run the existing frontend tests/build.
+- `liquid-glass.js` is copied or vendored only when a concrete surface needs it; there is no required npm dependency. Pin the source commit and check its license before committing.
+- `liquid-logo` is used outside the app to create/export static artwork; no install command is required.
+- No plugins were supplied in the request, so none are installed or treated as project requirements.
+
+## User-wide development toolkit
+
+Installed for reuse across projects on 2026-09-09:
+
+- `web-design-guidelines` from `vercel-labs/agent-skills`: UI quality, accessibility, responsive layout, and interaction review.
+- `taste-skill` (`design-taste-frontend`) from `Leonxlnx/taste-skill`: anti-generic frontend direction.
+- `image-to-code-skill` (`image-to-code`) from `Leonxlnx/taste-skill`: reference-image analysis to frontend implementation.
+- `playwright-cli` skill from `microsoft/playwright-cli`, plus the global `@playwright/cli` command: token-efficient browser testing and inspection.
+- `impeccable` from `pbakaus/impeccable`: design audit/polish workflow and detectors.
+- `ui-ux-pro-max` from `nextlevelbuilder/ui-ux-pro-max-skill`: design-system and cross-platform UI/UX guidance.
+
+These are reusable agent skills/tools, not AgniView runtime dependencies. Apply only when the task is actually UI, visual, or browser-testing work; preserve product requirements and accessibility over stylistic guidance.
+
+Reference-only items: “Awesome design” is a curated directory, not one installable skill; “Emil Kowalski” is a design/motion reference. No plugin package was identified for either name.
+
 ## Implementation directive
 
 The canonical initial stack is React/Next.js frontend, Mapbox GL JS map, Python Flask REST backend, PostgreSQL/PostGIS, S3-compatible storage via MinIO locally, and Docker Compose. Primary thermal data is NASA FIRMS VIIRS/MODIS; industrial context is OSM/Overpass; satellite enrichment is NASA Earthdata STAC with Sentinel-2/HLS COGs. Do not add Redis until a real cache implementation requires it.

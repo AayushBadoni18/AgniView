@@ -19,6 +19,7 @@ class PipelineSettings:
     cluster_multiplier: float = 2
     max_profile_age_days: int = 30
     classification_version: str = "v1"
+    dnbr_wildfire_threshold: float = .30
 
     @classmethod
     def from_env(cls):
@@ -32,6 +33,7 @@ class PipelineSettings:
             float(os.getenv("CLUSTER_ANOMALY_MULTIPLIER", "2")),
             int(os.getenv("THERMAL_PROFILE_MAX_AGE_DAYS", "30")),
             os.getenv("CLASSIFICATION_PIPELINE_VERSION", "v1"),
+            float(os.getenv("DNBR_WILDFIRE_THRESHOLD", ".30")),
         )
 
 
@@ -68,6 +70,7 @@ class ThermalPipeline:
             anomaly_min_delta=self.settings.anomaly_min_delta,
             footprint_multiplier=self.settings.footprint_multiplier,
             cluster_multiplier=self.settings.cluster_multiplier,
+            dnbr_wildfire_threshold=self.settings.dnbr_wildfire_threshold,
             max_profile_age=timedelta(days=self.settings.max_profile_age_days),
         )
         enrichment = None
@@ -82,6 +85,7 @@ class ThermalPipeline:
                                   anomaly_min_delta=self.settings.anomaly_min_delta,
                                   footprint_multiplier=self.settings.footprint_multiplier,
                                   cluster_multiplier=self.settings.cluster_multiplier,
+                                  dnbr_wildfire_threshold=self.settings.dnbr_wildfire_threshold,
                                   max_profile_age=timedelta(days=self.settings.max_profile_age_days))
         score, label = severity(record.get("frp"), detection.dnbr, result.confidence)
         profile_id = self.store.ensure_profile(profile, record, result, zone_id, self.settings)

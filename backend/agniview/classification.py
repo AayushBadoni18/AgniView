@@ -72,6 +72,7 @@ def classify(
     anomaly_min_delta: float = 5,
     footprint_multiplier: float = 2,
     cluster_multiplier: float = 2,
+    dnbr_wildfire_threshold: float = .30,
     max_profile_age: timedelta = timedelta(days=30),
 ) -> ClassificationResult:
     now = now or datetime.now(timezone.utc)
@@ -92,7 +93,7 @@ def classify(
                 triggers.append("Historical profile is stale")
             if detection.frp is not None and detection.frp > profile.mean_frp + max(anomaly_min_delta, anomaly_std_multiplier * profile.frp_stddev):
                 triggers.append("FRP exceeds historical baseline")
-            if detection.dnbr is not None and detection.dnbr >= 0.30:
+            if detection.dnbr is not None and detection.dnbr >= dnbr_wildfire_threshold:
                 triggers.append("Burn evidence conflicts with historical profile")
             if (profile.industrial_zone_id and detection.industrial_zone_id != profile.industrial_zone_id
                     or detection.osm_context_hash and detection.osm_context_hash != profile.osm_context_hash):
@@ -111,7 +112,7 @@ def classify(
                 return _result(detection, profile, profile.classification, profile.confidence,
                                "historical_profile", ("Known recurring industrial thermal source",), True)
 
-    if detection.dnbr is not None and detection.dnbr >= 0.30:
+    if detection.dnbr is not None and detection.dnbr >= dnbr_wildfire_threshold:
         classification, confidence, evidence = "wildfire", 0.90, "Strong burn-change evidence"
     elif detection.industrial_overlap:
         classification, confidence, evidence = "industrial", 0.82, "Detection intersects an industrial area"

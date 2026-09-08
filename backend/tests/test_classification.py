@@ -97,3 +97,13 @@ def test_non_frp_safety_signals_force_full_reclassification():
         result = classify(observed, historical, now=NOW)
         assert result.full_classification_skipped is False
         assert reason in result.reasons
+
+
+def test_configured_burn_threshold_controls_fast_path_and_industrial_override():
+    observed = detection(dnbr=.25)
+    burned = classify(observed, profile(), now=NOW, dnbr_wildfire_threshold=.2)
+    assert burned.classification == "wildfire"
+    assert burned.full_classification_skipped is False
+    assert "Burn evidence conflicts with historical profile" in burned.reasons
+    normal = classify(observed, profile(), now=NOW, dnbr_wildfire_threshold=.4)
+    assert normal.full_classification_skipped is True

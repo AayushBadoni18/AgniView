@@ -13,8 +13,18 @@ services:
       timeout: 5s
       retries: 10
     volumes:
-      - ./database/migrations:/docker-entrypoint-initdb.d:ro
       - postgres_data:/var/lib/postgresql/data
+
+  migrate:
+    build: ./backend
+    command: ["python", "-m", "agniview.migrations"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL securely}
+    volumes:
+      - ./database/migrations:/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   backend:
     build: ./backend
@@ -31,6 +41,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
     build:
@@ -56,11 +68,15 @@ services:
       FIRMS_AREA: ${FIRMS_AREA:-54,5.5,102,40}
       FIRMS_SOURCE: ${FIRMS_SOURCE:-VIIRS_NOAA20_NRT}
       SATELLITE_ENRICHMENT_ENABLED: ${SATELLITE_ENRICHMENT_ENABLED:-false}
+      SATELLITE_PROCESSING_VERSION: ${SATELLITE_PROCESSING_VERSION:-v1}
+      DNBR_WILDFIRE_THRESHOLD: ${DNBR_WILDFIRE_THRESHOLD:-0.30}
       NASA_EARTHDATA_USERNAME: ${NASA_EARTHDATA_USERNAME:-}
       NASA_EARTHDATA_PASSWORD: ${NASA_EARTHDATA_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   osm-worker:
     profiles: ["ingestion"]
@@ -73,6 +89,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   minio:
     image: minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e

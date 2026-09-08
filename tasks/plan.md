@@ -1,5 +1,30 @@
 # Implementation Plan: AgniView
 
+## Active pre-deployment objective — 2026-09-09
+
+The supplied goal-objective.md and Phase 13 addendum supersede prior completion
+claims. Work in dependency order, with regression tests before behavioral fixes;
+do not commit/push or expose `.env`. Each phase needs measured evidence.
+
+1. Dedicated test-database guards; migration ledger, clean install, legacy upgrade,
+   atomic failure/restart and concurrent runner tests.
+2. Correct SWIR2 NBR bands, shared-pixel quality masks, configurable heuristic and provenance.
+3. Rasterio container/local COG smoke; one authenticated Earthdata verification.
+4. Selection/filter response races, accessible list, responsive and Mapbox E2E.
+5. Snapshot-safe OSM removal/change lifecycle and malformed-feature isolation.
+6. Atomic/idempotent ingestion and concurrent PostGIS regressions.
+7. Explicit AI provider configuration, bounded costs, durable timestamps/caches/isolation.
+8. Real object-storage asset flow or documented removal of unsupported implementation claims.
+9. Dependencies/images, secrets, least privilege, headers, CSV/body/usage hardening.
+10. Deployment boundary and authorization; defer user-controlled identity choice until other work is done.
+11. Full local/Linux/CI quality gates, scans, proxy and container smoke tests.
+12. Reconcile all memory, instructions and checklists against verified results.
+13. RootCause.pdf claim-by-claim parity, scientific references, costs/licensing,
+    reproducible benchmarks, and explicit correction of unsupported pitch promises.
+
+Current slice: phase 1. Remaining phases and all 33 final gates are open until
+verified; earlier checked milestones below describe historical work only.
+
 ## Overview
 
 Build AgniView incrementally as a geospatial thermal-event intelligence system. The first vertical slice establishes reproducible local services; later slices add durable geospatial data, FIRMS ingestion, classification memory, map interaction, event-specific AI, and portfolio hardening.

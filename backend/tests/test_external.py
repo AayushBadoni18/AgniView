@@ -58,16 +58,18 @@ def test_hls_enrichment_reads_only_needed_assets_and_calculates_dnbr():
         return {"id": item_id, "collection": "HLSS30_2.0", "properties": {"eo:cloud_cover": 2},
                 "assets": {band: {"href": f"{item_id}.{band}.tif"} for band in values}}
 
-    pre, post = item("pre", ("B8A", "B11", "Fmask")), item("post", ("B8A", "B11", "Fmask"))
+    pre, post = item("pre", ("B8A", "B12", "Fmask")), item("post", ("B8A", "B12", "Fmask"))
     class Stac:
         calls = 0
         def search(self, *_args, **_kwargs):
             self.calls += 1
             return [pre if self.calls == 1 else post]
     class Reader:
-        values = {"pre.B8A.tif": 8000, "pre.B11.tif": 2000, "pre.Fmask.tif": 0,
-                  "post.B8A.tif": 4000, "post.B11.tif": 6000, "post.Fmask.tif": 0}
-        def read(self, href, *_coordinates): return self.values[href]
+        def read_observation(self, hrefs, *_coordinates):
+            prefix = hrefs[0].split(".")[0]
+            assert hrefs == (f"{prefix}.B8A.tif", f"{prefix}.B12.tif", f"{prefix}.Fmask.tif")
+            return {"nir": .8 if prefix == "pre" else .4, "swir": .2 if prefix == "pre" else .6,
+                    "validPixels": 9, "totalPixels": 9}
 
     class Cache:
         value = None
@@ -79,6 +81,8 @@ def test_hls_enrichment_reads_only_needed_assets_and_calculates_dnbr():
     assert result["available"] is True
     assert round(result["dnbr"], 2) == .8
     assert result["preItem"] == "pre" and result["postItem"] == "post"
+    assert result["preObservation"]["bands"] == ["B8A", "B12", "FMASK"]
+    assert result["processingVersion"] == "v2-swir2-joint-mask"
     assert enricher.enrich({"detected_at": "2026-09-08T00:00:00Z", "latitude": 20, "longitude": 78}) == result
     assert stac.calls == 2
 
@@ -87,3 +91,15 @@ def test_hls_enrichment_fails_gracefully_when_imagery_is_missing():
     class Stac:
         def search(self, *_args, **_kwargs): return []
     assert SatelliteEnricher(Stac()).enrich({"detected_at": "2026-09-08T00:00:00Z", "latitude": 20, "longitude": 78})["available"] is False
+
+
+def test_l30_uses_swir2_and_rejects_unknown_product():
+    class Reader:
+        def read_observation(self, hrefs, *_args):
+            assert hrefs == ("B05", "B07", "FMASK")
+            return {"nir": .8, "swir": .2, "validPixels": 9, "totalPixels": 9}
+    feature = {"collection": "HLSL30_2.0", "assets": {b: {"href": b} for b in ["B05", "B06", "B07", "FMASK"]}}
+    enricher = SatelliteEnricher(reader=Reader())
+    assert enricher._observation(feature, 78, 20)["bands"] == ["B05", "B07", "FMASK"]
+    feature["collection"] = "unknown"
+    assert enricher._observation(feature, 78, 20) is None

@@ -2,11 +2,12 @@
 
 ## Current phase
 
-Phase 18 — credentialed final gates
+Phase 18 — credentialed final gates (Executing Validation)
+Phase 19-22 — Advanced Roadmap (Pending)
 
 ## Overall status
 
-Working, tested end-to-end MVP; all local and uncredentialed milestones verified. NASA FIRMS, Earthdata COG, and token-backed Mapbox execution await credentials.
+Working, tested end-to-end MVP; all local and uncredentialed milestones verified. NASA FIRMS, Earthdata, Mapbox, and OpenRouter credentials have now been provided in `.env`. We are proceeding with credential validation and the advanced roadmap.
 
 ## Last verified
 
@@ -46,7 +47,7 @@ Latest migration: `007_anomaly_baselines.sql`
 
 ## Next exact task
 
-Supply the FIRMS, Earthdata, and Mapbox credentials in an uncommitted `.env`, then run the credentialed checks in `docs/RUNBOOK.md` and change the three audit rows plus Phase 18 to `VERIFIED`.
+Execute the pre-deployment objectives starting with the database migration ledger (`backend/agniview/migrations.py`), followed by Phase 18 credentialed validation, then moving onto Phase 19 WebSockets and UI mockups.
 
 ## Recent decisions
 

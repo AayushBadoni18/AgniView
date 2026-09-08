@@ -1,5 +1,6 @@
 import requests
 import os
+from contextlib import ExitStack
 from hashlib import sha256
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -122,7 +123,7 @@ def dnbr(pre_nir: float, pre_swir: float, post_nir: float, post_swir: float) -> 
 
 class RasterioPointReader:
     @lru_cache(maxsize=512)
-    def read(self, href, longitude, latitude, size=3):
+    def read_observation(self, hrefs, longitude, latitude, size=3):
         import numpy
         import rasterio
         from rasterio.warp import transform
@@ -130,13 +131,36 @@ class RasterioPointReader:
 
         username, password = os.getenv("NASA_EARTHDATA_USERNAME"), os.getenv("NASA_EARTHDATA_PASSWORD")
         options = {"GDAL_HTTP_USERPWD": f"{username}:{password}"} if username and password else {}
-        with rasterio.Env(**options):
-            with rasterio.open(href) as dataset:
-                x, y = transform("EPSG:4326", dataset.crs, [longitude], [latitude])
-                row, column = dataset.index(x[0], y[0])
-                offset = size // 2
-                values = dataset.read(1, window=Window(column - offset, row - offset, size, size), masked=True)
-                return None if values.count() == 0 else float(numpy.ma.median(values))
+        with rasterio.Env(**options), ExitStack() as stack:
+            datasets = [stack.enter_context(rasterio.open(href)) for href in hrefs]
+            if len(datasets) != 3:
+                raise ValueError("NIR, SWIR2 and Fmask are required")
+            dataset = datasets[0]
+            if any((other.crs, other.transform, other.shape) != (dataset.crs, dataset.transform, dataset.shape)
+                   for other in datasets[1:]):
+                raise ValueError("Reflectance and quality grids must match")
+            x, y = transform("EPSG:4326", dataset.crs, [longitude], [latitude])
+            row, column = dataset.index(x[0], y[0])
+            if not (0 <= row < dataset.height and 0 <= column < dataset.width):
+                return None
+            offset = size // 2
+            window = Window(column - offset, row - offset, size, size).intersection(
+                Window(0, 0, dataset.width, dataset.height))
+            values = [source.read(1, window=window, masked=True) for source in datasets]
+            nir_values, swir_values, quality = [value.data for value in values]
+            valid = ~numpy.logical_or.reduce([numpy.ma.getmaskarray(value) for value in values])
+            for reflectance in (nir_values, swir_values):
+                valid &= numpy.isfinite(reflectance) & (reflectance >= 0) & (reflectance <= 10000)
+            valid &= numpy.isfinite(quality) & (quality >= 0) & (quality < 255)
+            quality_bits = numpy.where(valid, quality, 255).astype("uint8")
+            valid &= (quality_bits & 0b00011110) == 0
+            if not valid.any():
+                return None
+            return {"nir": float(numpy.median(nir_values[valid])) * .0001,
+                    "swir": float(numpy.median(swir_values[valid])) * .0001,
+                    "validPixels": int(valid.sum()), "totalPixels": int(valid.size),
+                    "requestedWindowPixels": size, "crs": str(dataset.crs),
+                    "pixelResolution": list(dataset.res)}
 
 
 class SatelliteEnricher:
@@ -148,12 +172,15 @@ class SatelliteEnricher:
     def enrich(self, record):
         detected = datetime.fromisoformat(str(record["detected_at"]).replace("Z", "+00:00"))
         latitude, longitude = record["latitude"], record["longitude"]
-        version = os.getenv("SATELLITE_PROCESSING_VERSION", "v1")
+        algorithm = "v2-swir2-joint-mask"
+        version = f'{algorithm}:{os.getenv("SATELLITE_PROCESSING_VERSION", "v1")}'
         cache_key = sha256(f"{latitude:.5f}|{longitude:.5f}|{detected.date()}|{version}".encode()).hexdigest()
         if self.cache and (cached := self.cache.get_satellite_cache(cache_key)):
             return cached
 
         def finish(result):
+            result["processingVersion"] = algorithm
+            result["configuredVersion"] = version
             if self.cache:
                 self.cache.save_satellite_cache(cache_key, result, 720 if result.get("available") else 6)
             return result
@@ -170,11 +197,13 @@ class SatelliteEnricher:
             return finish({"available": False, "reason": f"Imagery read failed: {type(error).__name__}"})
         if not before or not after:
             return finish({"available": False, "reason": "Imagery is cloudy, masked, or incomplete"})
-        change = dnbr(before[0], before[1], after[0], after[1])
-        return finish({"available": change is not None, "preNbr": nbr(*before[:2]), "postNbr": nbr(*after[:2]),
+        change = dnbr(before["nir"], before["swir"], after["nir"], after["swir"])
+        return finish({"available": change is not None, "preNbr": nbr(before["nir"], before["swir"]),
+                       "postNbr": nbr(after["nir"], after["swir"]),
                        "dnbr": change, "preItem": pre.get("id"), "postItem": post.get("id"),
+                       "preObservation": before, "postObservation": after,
                        "thumbnailUrl": _thumbnail_href(post),
-                       "quality": "clear_at_event" if change is not None else "invalid_reflectance"})
+                       "quality": "joint_valid_pixels" if change is not None else "invalid_reflectance"})
 
     @staticmethod
     def _best(features):
@@ -182,16 +211,21 @@ class SatelliteEnricher:
 
     def _observation(self, feature, longitude, latitude):
         product = f'{feature.get("collection", "")} {feature.get("id", "")}'.upper()
-        nir_band, swir_band = ("B8A", "B11") if "S30" in product else ("B05", "B06")
-        hrefs = [_asset_href(feature, band) for band in (nir_band, swir_band, "FMASK")]
+        if "S30" in product:
+            bands = ("B8A", "B12", "FMASK")
+        elif "L30" in product:
+            bands = ("B05", "B07", "FMASK")
+        else:
+            return None
+        hrefs = tuple(_asset_href(feature, band) for band in bands)
         if not all(hrefs):
             return None
-        nir_value = self.reader.read(hrefs[0], longitude, latitude)
-        swir_value = self.reader.read(hrefs[1], longitude, latitude)
-        quality = self.reader.read(hrefs[2], longitude, latitude, 1)
-        if nir_value in (None, -9999) or swir_value in (None, -9999) or quality is None or int(quality) & 0b00011110:
+        observation = self.reader.read_observation(hrefs, longitude, latitude)
+        if observation is None:
             return None
-        return nir_value * .0001, swir_value * .0001, int(quality)
+        properties = feature.get("properties", {})
+        return {**observation, "bands": list(bands), "itemId": feature.get("id"),
+                "acquiredAt": properties.get("datetime"), "cloudCover": properties.get("eo:cloud_cover")}
 
 
 def _asset_href(feature, band):

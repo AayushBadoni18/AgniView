@@ -22,3 +22,7 @@
 - [x] Phase 16 — Local container deployment
 - [x] Phase 17 — Demo hardening
 - [-] Phase 18 — Final quality gate (FIRMS, Earthdata, and Mapbox credentials blocked)
+- [ ] Phase 19 — Real-time WebSockets
+- [ ] Phase 20 — Advanced Next.js UI Components (Dashboard Mockup)
+- [ ] Phase 21 — Machine Learning Feature Engineering & Training
+- [ ] Phase 22 — Background Workers for OSM & Data Refresh

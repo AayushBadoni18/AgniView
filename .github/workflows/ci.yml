@@ -55,6 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEMO_MODE: "true"
+      POSTGRES_PASSWORD: ci-${{ github.run_id }}
+      DATABASE_URL: postgresql://agniview:ci-${{ github.run_id }}@postgres:5432/agniview
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -64,8 +66,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --ignore-scripts
         working-directory: frontend
-      - run: docker compose config
+      - run: docker compose config --quiet
       - run: docker compose up -d --build postgres minio backend frontend
+      - run: docker compose run --rm --no-deps backend python -m agniview.raster_smoke
       - run: |
           for attempt in {1..30}; do
             curl --fail http://localhost:5000/health && curl --fail http://localhost:3000 && curl --fail http://localhost:3000/api/events && curl --fail http://localhost:9000/minio/health/live && exit 0

@@ -8,10 +8,17 @@ Local checks:
 cd frontend && npm test && npm run build && npm audit --omit=dev
 ```
 
-Real PostGIS check after `docker compose up -d`:
+Real PostGIS checks must use a dedicated disposable database named `agniview_test`
+or `agniview_test_*`. The test rejects all other database names before connecting
+and checks the actual connected database before destructive setup. Never use the
+normal application database. CI already uses `agniview_test`.
+
+Create the test database with your configured database administrator, then set
+`TEST_DATABASE_URL` securely to its PostgreSQL URI (no query string or fragment).
+Do not paste credentials into logs or command history. Run:
 
 ```text
-docker compose run --rm --volume "D:\AgniView:/workspace:ro" --env TEST_DATABASE_URL=postgresql://agniview:agniview@postgres:5432/agniview backend sh -c "pip install --quiet pytest==8.3.4 && cd /tmp && PYTHONPATH=/workspace/backend python -m pytest /workspace/backend/tests -q -p no:cacheprovider"
+python -m pytest backend/tests -q
 ```
 
 Current result: 45 backend tests pass with PostGIS, 2 frontend tests pass, production build passes, compileall passes, and npm audit reports zero vulnerabilities. Coverage includes migration replay, real spatial matching, lock/reuse/anomaly transitions, FIRMS, OSM, HLS selection and COG windows, caches, API boundaries/failures, AI grounding/isolation, alerts, metrics, and exports.

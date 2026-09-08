@@ -6,9 +6,13 @@ import pytest
 
 from agniview.pipeline import ThermalPipeline
 from agniview.repository import PostgresRepository
+from agniview.migrations import migrate
+from db_support import require_test_database
 
 
 DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+if DATABASE_URL:
+    require_test_database(DATABASE_URL)
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="TEST_DATABASE_URL is required for PostGIS integration")
 
 
@@ -16,10 +20,10 @@ def test_migrations_and_thermal_memory_end_to_end():
     import psycopg
 
     with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
-        for table in ("ai_answers", "satellite_enrichment_cache", "alerts", "ingestion_jobs", "classified_events", "historical_thermal_profiles", "osm_industrial_zones", "raw_firms_detections"):
-            connection.execute(f"DROP TABLE IF EXISTS {table} CASCADE")
-        for migration in sorted((Path(__file__).parents[2] / "database" / "migrations").glob("*.sql")):
-            connection.execute(migration.read_text())
+        require_test_database(DATABASE_URL, actual_name=connection.info.dbname)
+        connection.execute("DROP SCHEMA public CASCADE")
+        connection.execute("CREATE SCHEMA public")
+        migrate(connection, Path(__file__).parents[2] / "database" / "migrations")
         assert connection.execute("SELECT PostGIS_Version()").fetchone()[0]
 
     repository = PostgresRepository(DATABASE_URL)

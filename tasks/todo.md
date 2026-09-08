@@ -8,7 +8,7 @@
 - [ ] Prevent Mapbox load timing from retaining an empty initial event collection.
 - [ ] Exercise the Next.js API proxy in container CI.
 - [ ] Run the full local/PostGIS/container/frontend/API quality gates and update project memory.
-- [!] User-only: provide FIRMS, Earthdata, and Mapbox credentials for external verification.
+- [x] User-only: provide FIRMS, Earthdata, and Mapbox credentials for external verification.
 
 - [x] Phase 0.1 — Repository structure
 - [x] Phase 0.2 — Environment configuration
