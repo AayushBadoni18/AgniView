@@ -22,7 +22,8 @@ do not commit/push or expose `.env`. Each phase needs measured evidence.
 13. RootCause.pdf claim-by-claim parity, scientific references, costs/licensing,
     reproducible benchmarks, and explicit correction of unsupported pitch promises.
 
-Current slice: phase 1. Remaining phases and all 33 final gates are open until
+Current slice: phase 3. Phases 1–2 passed in Linux/PostGIS (89 tests); native Windows
+passes 84 with 5 database skips. Remaining phases and final gates are open until
 verified; earlier checked milestones below describe historical work only.
 
 ## Overview

@@ -66,6 +66,13 @@ def test_lists_paginated_events():
     assert response.get_json()["pagination"]["totalItems"] == 1
 
 
+def test_zero_width_time_window_is_empty_not_a_validation_failure():
+    app = create_app(DemoRepository()).test_client()
+    response = app.get("/api/events/map?start=2026-09-08T00:00:00Z&end=2026-09-08T00:00:00Z")
+    assert response.status_code == 200
+    assert response.get_json()["features"] == []
+
+
 def test_rejects_invalid_bbox():
     response = client().get("/api/events/map?bbox=bad")
     assert response.status_code == 422

@@ -1,6 +1,6 @@
 # AgniView
 
-Transforming raw thermal pixels into semantic intelligence : Agniview is an AI-driven GEOINT pipeline cross-referencing NASA FIRMS anomalies with OpenStreetMap and 365-day heat baselines. It uses sub-5ms XGBoost classification to filter routine flares, delivering sub-1.5s alerts for critical explosions.
+AgniView combines NASA FIRMS detections, OpenStreetMap context, persistent thermal-source profiles and optional satellite burn-change evidence. Deterministic rules classify events; point-specific AI explains stored evidence. “Self-learning” means profile reuse and anomaly-triggered re-evaluation, not neural retraining.
 
 Geospatial thermal-event intelligence for distinguishing recurring industrial heat sources from potential wildfire activity.
 

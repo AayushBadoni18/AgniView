@@ -1,5 +1,13 @@
 # AgniView Task Checklist
 
+## Active readiness checkpoint — 2026-09-09
+
+- [x] Dedicated test database guard; transactional migrations and clean/007-upgrade/restart/concurrency tests.
+- [x] Correct SWIR2 bands, joint quality masks, threshold configuration and provenance.
+- [x] Rasterio image-build smoke; 89 Linux/PostGIS tests and 84 native tests (5 database skips).
+- [ ] Authenticated Earthdata verification, then phases 4–13 in `tasks/plan.md`.
+- Prior milestone claims below are historical and require reconciliation; they do not establish deployment readiness.
+
 ## Final credential-free gap audit
 
 - [ ] Include available thermal-profile statistics and related events in trusted AI context.

@@ -2,28 +2,32 @@
 
 ## Current phase
 
-Phase 18 — credentialed final gates (Executing Validation)
-Phase 19-22 — Advanced Roadmap (Pending)
+Pre-deployment remediation, phase 3 of the supplied 13-phase objective.
 
 ## Overall status
 
-Working, tested end-to-end MVP; all local and uncredentialed milestones verified. NASA FIRMS, Earthdata, Mapbox, and OpenRouter credentials have now been provided in `.env`. We are proceeding with credential validation and the advanced roadmap.
+Implementation and hardening gaps remain. The prior claim that only credentialed
+validation remained was incorrect. Complete mandatory readiness work before the
+advanced roadmap. Credentials are configured; never display them.
 
 ## Last verified
 
-2026-09-08
+2026-09-09: Linux with isolated PostGIS passed 89 backend tests. Native Windows
+Python 3.12 passes 84, with only 5 PostGIS tests skipped. Both include 27 real local
+COG cases. Corrected backend image build and permanent Rasterio/COG smoke pass.
+Rasterio/Affine emits 82 upstream pending-deprecation warnings. Later gates remain open.
 
 ## Verified system
 
 - Flask REST API for events, map GeoJSON, details, profile history, point AI, alerts, metrics, and CSV/PDF exports.
-- Seven PostgreSQL/PostGIS migrations with geography/geometry fields, provenance, durable caches, version fields, FKs, and GiST indexes.
+- Eight PostgreSQL/PostGIS migrations with a transactional checksum ledger, advisory lock, explicit legacy baseline, safe restart and clean/007-upgrade/concurrent/failure regression coverage.
 - Deterministic classification with structured evidence, severity, confidence evolution, trusted-profile reuse, and all canonical re-evaluation signals.
 - FIRMS, Overpass, CMR STAC, Rasterio COG, and optional OpenAI adapters with bounded requests, retries, and explicit unavailable states.
 - Persistent satellite-result, AI-summary, and normalized-question answer caches.
 - Next.js/React/Mapbox UI with filters, clickable markers/fallback events, details, timeline, imagery state, anomaly state, savings, Ask AI, and event isolation.
 - Docker Compose services for PostGIS, MinIO, backend, and frontend, plus ingestion-profile workers and CI definitions.
 
-## Verification evidence
+## Earlier verification evidence (historical)
 
 - Linux/PostGIS: 45 tests pass, including migrations from empty tables and real spatial profile/reuse/anomaly flow.
 - Local Python: 44 pass, 1 database test skipped because MSYS Python cannot load libpq.
@@ -43,11 +47,15 @@ Working, tested end-to-end MVP; all local and uncredentialed milestones verified
 
 ## Database migrations
 
-Latest migration: `007_anomaly_baselines.sql`
+Latest migration: `008_osm_evidence_version.sql`
 
 ## Next exact task
 
-Execute the pre-deployment objectives starting with the database migration ledger (`backend/agniview/migrations.py`), followed by Phase 18 credentialed validation, then moving onto Phase 19 WebSockets and UI mockups.
+Finish authenticated Earthdata HLS verification, then phases 4–13 in `tasks/plan.md`.
+Phases 1–2 and the image/local COG portion of phase 3 passed. Keep satellite
+enrichment disabled by default until the live gate passes. The supplied baseline
+already verifies FIRMS (255 processed, zero rejected) and Mapbox marker/details;
+avoid unnecessary repeated FIRMS requests. No commits or pushes are authorized.
 
 ## Recent decisions
 

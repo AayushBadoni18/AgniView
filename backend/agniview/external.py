@@ -1,6 +1,7 @@
 import requests
 import os
 from contextlib import ExitStack
+from pathlib import Path
 from hashlib import sha256
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -129,9 +130,17 @@ class RasterioPointReader:
         from rasterio.warp import transform
         from rasterio.windows import Window
 
-        username, password = os.getenv("NASA_EARTHDATA_USERNAME"), os.getenv("NASA_EARTHDATA_PASSWORD")
-        options = {"GDAL_HTTP_USERPWD": f"{username}:{password}"} if username and password else {}
-        with rasterio.Env(**options), ExitStack() as stack:
+        from .earthdata import authenticated_options, checked_url
+
+        options = {"GDAL_HTTP_TIMEOUT": "45", "GDAL_HTTP_CONNECTTIMEOUT": "15",
+                   "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR"}
+        with ExitStack() as stack:
+            remote = [href for href in hrefs if not Path(href).is_file()]
+            for href in remote:
+                checked_url(href)
+            if remote:
+                options.update(stack.enter_context(authenticated_options(remote[0])))
+            stack.enter_context(rasterio.Env(**options))
             datasets = [stack.enter_context(rasterio.open(href)) for href in hrefs]
             if len(datasets) != 3:
                 raise ValueError("NIR, SWIR2 and Fmask are required")

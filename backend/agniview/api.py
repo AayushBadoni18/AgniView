@@ -175,8 +175,8 @@ def _filters():
             raise ValueError("region must contain at most 100 characters")
     filters["start"] = _optional_datetime("start")
     filters["end"] = _optional_datetime("end")
-    if filters["start"] and filters["end"] and filters["start"] >= filters["end"]:
-        raise ValueError("start must be earlier than end")
+    if filters["start"] and filters["end"] and filters["start"] > filters["end"]:
+        raise ValueError("start must not be later than end")
     raw_confidence = request.args.get("minConfidence")
     if raw_confidence is None:
         filters["min_confidence"] = None

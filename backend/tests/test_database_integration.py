@@ -68,3 +68,7 @@ def test_migrations_and_thermal_memory_end_to_end():
     assert anomaly["fullClassificationSkipped"] is False
     assert "FRP exceeds historical baseline" in anomaly["classificationReason"]
     assert repository.list_alerts("open")[0]["eventId"] == anomaly_id
+    boundary = (started + timedelta(minutes=7)).isoformat()
+    assert [row["id"] for row in repository.map_events(start=boundary)] == [anomaly_id]
+    assert not repository.map_events(start=boundary, end=boundary)
+    assert not repository.map_events(min_confidence=1)

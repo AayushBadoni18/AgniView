@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -10,6 +10,7 @@ export default function MapView({ collection, onSelect }) {
   const collectionRef = useRef(collection);
   const onSelectRef = useRef(onSelect);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  const [mapError, setMapError] = useState(false);
   collectionRef.current = collection;
   onSelectRef.current = onSelect;
 
@@ -23,10 +24,11 @@ export default function MapView({ collection, onSelect }) {
       style: "mapbox://styles/mapbox/dark-v11", 
       center: [78.2, 20.5], 
       zoom: 4,
-      attributionControl: false
+      attributionControl: true
     });
     
     map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "bottom-left");
+    map.current.on("error", () => setMapError(true));
     
     map.current.on("load", () => {
       map.current.addSource("events", { type: "geojson", data: collectionRef.current, cluster: true, clusterRadius: 50 });
@@ -113,28 +115,12 @@ export default function MapView({ collection, onSelect }) {
         map.current.getCanvas().style.cursor = 'pointer';
         const coordinates = e.features[0].geometry.coordinates.slice();
         const props = e.features[0].properties;
-        const isCritical = props.severity === 'high';
         
         while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
           coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
         }
         
-        const html = `
-          <div style="background: var(--bg-secondary); padding: 12px; border-radius: 8px; border: 1px solid var(--border-subtle); color: white; min-width: 180px;">
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-              <div style="width: 8px; height: 8px; border-radius: 50%; background: ${isCritical ? 'var(--accent-critical)' : 'var(--accent-warning)'}"></div>
-              <strong style="font-size: 12px; text-transform: uppercase;">${props.classification} (${props.source || 'VIIRS'})</strong>
-            </div>
-            <div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 11px;">
-              <span style="color: var(--text-secondary)">FRP</span> <strong style="text-align: right">${props.frp || 0} MW</strong>
-              <span style="color: var(--text-secondary)">CONFIDENCE</span> <strong style="text-align: right">${Math.round(props.confidence * 100)}%</strong>
-              <span style="color: var(--text-secondary)">DETECTED</span> <strong style="text-align: right">${new Date(props.detectedAt).toLocaleTimeString()}</strong>
-            </div>
-            <div style="margin-top: 8px; font-size: 10px; color: var(--text-tertiary); text-align: center; text-transform: uppercase;">Click for full intel →</div>
-          </div>
-        `;
-
-        popup.setLngLat(coordinates).setHTML(html).addTo(map.current);
+        popup.setLngLat(coordinates).setText(`${props.classification} · ${props.frp ?? "Unavailable"} MW · ${props.confidence == null ? "Confidence unavailable" : Math.round(props.confidence * 100) + "% confidence"}`).addTo(map.current);
       });
 
       map.current.on('mouseleave', 'events', () => {
@@ -147,10 +133,13 @@ export default function MapView({ collection, onSelect }) {
         onSelectRef.current(click.features[0].properties.id);
       });
       
-      map.current.on("click", "clusters", async (click) => {
+      map.current.on("click", "clusters", (click) => {
         const feature = map.current.queryRenderedFeatures(click.point, { layers: ["clusters"] })[0];
-        const zoom = await map.current.getSource("events").getClusterExpansionZoom(feature.properties.cluster_id);
-        map.current.easeTo({ center: feature.geometry.coordinates, zoom });
+        if (!feature) return;
+        const currentMap = map.current;
+        currentMap.getSource("events").getClusterExpansionZoom(feature.properties.cluster_id, (error, zoom) => {
+          if (!error && map.current === currentMap) currentMap.easeTo({ center: feature.geometry.coordinates, zoom });
+        });
       });
     });
     
@@ -162,10 +151,13 @@ export default function MapView({ collection, onSelect }) {
     if (source) source.setData(collection);
   }, [collection]);
 
-  if (!token) return <div className="map-fallback"><p>Mapbox token unavailable. Event list remains interactive.</p>{collection.features.map(({ properties }) => <button key={properties.id} onClick={() => onSelect(properties.id)}><span className={`dot ${properties.classification}`} />{properties.classification} · {properties.frp ?? "—"} MW</button>)}</div>;
   return (
     <div className="map-container">
-      <div ref={container} style={{ width: '100%', height: '100%' }} aria-label="Interactive thermal event map" />
+      {token ? <div ref={container} className="map-canvas" aria-label="Interactive thermal event map" /> : <p>Mapbox token unavailable. Event list remains interactive.</p>}
+      {mapError && <p>Basemap unavailable. Use the event list below.</p>}
+      <details open={!token} className="map-fallback"><summary>Accessible event list ({collection.features.length})</summary>
+        <div className="event-list">{collection.features.map(({ properties }) => <button key={properties.id} onClick={() => onSelect(properties.id)}><span className={`dot ${properties.classification}`} />{properties.classification} · {properties.frp ?? "Unavailable"} MW</button>)}</div>
+      </details>
       {/* Custom CSS for mapbox popups to remove default white background */}
       <style dangerouslySetInnerHTML={{__html: `
         .premium-tooltip .mapboxgl-popup-content { background: transparent; padding: 0; border-radius: 0; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
